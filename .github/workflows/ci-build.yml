@@ -8,9 +8,14 @@ on:
 jobs:
   build-win64:
     runs-on: [self-hosted, windows]
+    environment: ENGINE_PATH  
+
+    defaults:
+      run:
+        shell: cmd             
 
     env:
-      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}  
       PROJECT_NAME: GAS_Template
       UPROJECT: ${{ github.workspace }}\GAS_Template.uproject
       BUILD_DIR: ${{ github.workspace }}\Build
@@ -18,24 +23,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate project files
-        shell: pwsh
+      - name: Debug paths
         run: |
-          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\Build.bat" `
-            -projectfiles -project="${env:UPROJECT}" -game -rocket -progress
+          echo ENGINE_PATH=%ENGINE_PATH%
+          dir "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat"
 
-      - name: Build Editor (needed for cook/tests often)
-        shell: pwsh
+      - name: Generate project files
         run: |
-          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\Build.bat" `
-            "${env:PROJECT_NAME}Editor" Win64 Development "${env:UPROJECT}" -WaitMutex
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="%UPROJECT%" -game -rocket -progress
+
+      - name: Build Editor (often required for cook)
+        run: |
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" "%PROJECT_NAME%Editor" Win64 Development "%UPROJECT%" -WaitMutex
 
       - name: Package (BuildCookRun)
-        shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "${env:BUILD_DIR}" | Out-Null
-          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
-            -project="${env:UPROJECT}" `
-            -noP4 -platform=Win64 -clientconfig=Shipping `
-            -cook -allmaps -build -stage -pak -archive `
-            -archivedirectory="${env:BUILD_DIR}"
+          if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
+            -project="%UPROJECT%" ^
+            -noP4 -platform=Win64 -clientconfig=Shipping ^
+            -cook -allmaps -build -stage -pak -archive ^
+            -archivedirectory="%BUILD_DIR%"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Win64-Build
+          path: Build/
