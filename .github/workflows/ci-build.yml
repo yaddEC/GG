@@ -1,0 +1,41 @@
+name: CI - Build (Win64)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-win64:
+    runs-on: [self-hosted, windows]
+
+    env:
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      PROJECT_NAME: GAS_Template
+      UPROJECT: ${{ github.workspace }}\GAS_Template.uproject
+      BUILD_DIR: ${{ github.workspace }}\Build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate project files
+        shell: pwsh
+        run: |
+          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\Build.bat" `
+            -projectfiles -project="${env:UPROJECT}" -game -rocket -progress
+
+      - name: Build Editor (needed for cook/tests often)
+        shell: pwsh
+        run: |
+          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\Build.bat" `
+            "${env:PROJECT_NAME}Editor" Win64 Development "${env:UPROJECT}" -WaitMutex
+
+      - name: Package (BuildCookRun)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${env:BUILD_DIR}" | Out-Null
+          & "${env:ENGINE_PATH}\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="${env:UPROJECT}" `
+            -noP4 -platform=Win64 -clientconfig=Shipping `
+            -cook -allmaps -build -stage -pak -archive `
+            -archivedirectory="${env:BUILD_DIR}"
