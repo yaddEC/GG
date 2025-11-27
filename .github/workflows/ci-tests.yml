@@ -1,0 +1,49 @@
+name: CI - Automation Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: [self-hosted, windows]
+    environment: ENGINE_PATH
+
+    defaults:
+      run:
+        shell: cmd
+
+    env:
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      PROJECT_NAME: GG
+      UPROJECT: ${{ github.workspace }}\GG.uproject
+      LOG_PATH: ${{ github.workspace }}\Saved\Logs\Automation.log
+      REPORT_DIR: ${{ github.workspace }}\TestReports
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Debug (show uproject)
+        run: |
+          dir "%GITHUB_WORKSPACE%\*.uproject"
+          dir "%ENGINE_PATH%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+
+      - name: Build Editor (to have binaries for tests)
+        run: |
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" "%PROJECT_NAME%Editor" Win64 Development "%UPROJECT%" -WaitMutex
+
+      - name: Run automation tests (headless)
+        run: |
+          if not exist "%REPORT_DIR%" mkdir "%REPORT_DIR%"
+          call "%ENGINE_PATH%\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%UPROJECT%" ^
+            -ExecCmds="Automation RunTests Project;Quit" ^
+            -stdout -unattended -NOSPLASH -NullRHI -log ^
+            -ReportExportPath="%REPORT_DIR%" ^
+            -ABSLOG="%LOG_PATH%"
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutomationTestReports
+          path: TestReports/

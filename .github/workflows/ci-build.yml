@@ -1,0 +1,54 @@
+name: CI - Build (Win64)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-win64:
+    runs-on: [self-hosted, windows]
+    environment: ENGINE_PATH
+
+    defaults:
+      run:
+        shell: cmd
+
+    env:
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      PROJECT_NAME: GG
+      UPROJECT: ${{ github.workspace }}\GG.uproject
+      BUILD_DIR: ${{ github.workspace }}\Build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Debug (show uproject)
+        run: |
+          echo WORKSPACE=%GITHUB_WORKSPACE%
+          echo ENGINE_PATH=%ENGINE_PATH%
+          dir "%GITHUB_WORKSPACE%\*.uproject"
+          dir "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat"
+
+      - name: Generate project files
+        run: |
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="%UPROJECT%" -game -rocket -progress
+
+      - name: Build Editor (needed for cook/tests often)
+        run: |
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" "%PROJECT_NAME%Editor" Win64 Development "%UPROJECT%" -WaitMutex
+
+      - name: Package (BuildCookRun)
+        run: |
+          if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+          call "%ENGINE_PATH%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
+            -project="%UPROJECT%" ^
+            -noP4 -platform=Win64 -clientconfig=Shipping ^
+            -cook -allmaps -build -stage -pak -archive ^
+            -archivedirectory="%BUILD_DIR%"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Win64-Build
+          path: Build/
