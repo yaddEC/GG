@@ -1,8 +1,9 @@
-﻿#include "Misc/AutomationTest.h"
+﻿#include "GASTest.h"
+#include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "AbilitySystemComponent.h"
 #include "GGHealthSet.h"
-#include "GASTest.h"
+
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(UGasTest, "GAS.Health.ClampAttributeOnChange",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)

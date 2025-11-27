@@ -10,8 +10,7 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"GameplayAbilities",
-				"Engine",
-				"FunctionalTestingEditor"
+				"Engine"
 			]
 		}
 	],
@@ -33,10 +32,6 @@
 		},
 		{
 			"Name": "EditorTests",
-			"Enabled": true
-		},
-		{
-			"Name": "FunctionalTestingEditor",
 			"Enabled": true
 		},
 		{
