@@ -1,0 +1,27 @@
+name: CI - Automation Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: [self-hosted, windows]
+
+    env:
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      UPROJECT: ${{ github.workspace }}\GAS_Template.uproject
+      LOG_PATH: ${{ github.workspace }}\Saved\Logs\Automation.log
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run automation tests (headless)
+        shell: pwsh
+        run: |
+          & "${env:ENGINE_PATH}\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" `
+            "${env:UPROJECT}" `
+            -execcmds="Automation RunTests Project;Quit" `
+            -stdout -unattended -NOSPLASH -NullRHI -log `
+            -ABSLOG="${env:LOG_PATH}"
