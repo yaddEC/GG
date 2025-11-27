@@ -8,31 +8,33 @@ on:
 jobs:
   build-win64:
     runs-on: [self-hosted, windows]
-    environment: ENGINE_PATH  
+    environment: ENGINE_PATH
 
     defaults:
       run:
-        shell: cmd             
+        shell: cmd
 
     env:
-      ENGINE_PATH: ${{ vars.ENGINE_PATH }}  
-      PROJECT_NAME: GAS_Template
-      UPROJECT: ${{ github.workspace }}\GAS_Template.uproject
+      ENGINE_PATH: ${{ vars.ENGINE_PATH }}
+      PROJECT_NAME: GG
+      UPROJECT: ${{ github.workspace }}\GG.uproject
       BUILD_DIR: ${{ github.workspace }}\Build
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug paths
+      - name: Debug (show uproject)
         run: |
+          echo WORKSPACE=%GITHUB_WORKSPACE%
           echo ENGINE_PATH=%ENGINE_PATH%
+          dir "%GITHUB_WORKSPACE%\*.uproject"
           dir "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat"
 
       - name: Generate project files
         run: |
           call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="%UPROJECT%" -game -rocket -progress
 
-      - name: Build Editor (often required for cook)
+      - name: Build Editor (needed for cook/tests often)
         run: |
           call "%ENGINE_PATH%\Engine\Build\BatchFiles\Build.bat" "%PROJECT_NAME%Editor" Win64 Development "%UPROJECT%" -WaitMutex
 
